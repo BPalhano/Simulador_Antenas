@@ -9,37 +9,52 @@ import math
 
 # É preciso primeiramente declarar variáveis globais.
 
-R = int(input('Insira o Raio de alcance das anteas: '))
-N = int(input('Insira o numero de anteas desejado: '))
-loop = int(input('Insira o numero de loops que deve acontecer na simulação: '))
+R = int(input('Insira o Raio de alcance das antenas: '))
+N = int(input('Insira o número de antenas desejado: '))
+loop = int(input('Insira o número de loops que deve acontecer na simulação: '))
 loop = range(loop)
+it = range(N+1)
 
 PT = 19.95262315 #  43 dBm
 PN = (2.5118864315 * 10 **(-15))
 sigLN = 8
 sigRay = (1/ np.sqrt(2))
 
+
+
 #  métodos
 
 def antenas(num, dist):  # Gerador de posicionamento de ERB's
 
-    vetor = np.array([0,0])
+    x = dist * random.rand()
+    y = dist * random.rand()
+
+    vetor1 = np.array([0,0])
+    vetor2 = np.array([x,y])
+  
     contador = 0
     while (contador != num):
+
+        x = dist * random.rand()
+        y = dist * random.rand()
+      
+        arr1 = np.array([dist* math.cos((2*math.pi/num) * contador) , dist* math.sin((2*math.pi/num) * contador)])
+        arr2 = np.array([arr1[0] + x, arr1[1] + y])
         
-        arr = np.array([dist* math.cos((2*math.pi/num) * contador) , dist* math.sin((2*math.pi/num) * contador)])
-        vetor = np.vstack((vetor, arr))
+        vetor1 = np.vstack((vetor1, arr1))
+        vetor2 = np.vstack((vetor2,arr2))
+        
         contador += 1
 
-    return vetor
+    
+    return vetor1, vetor2
+
 
 def distancia(vet1,vet2): #  distância analítica entre dois corpos.
 
     d = np.array([])
 
-    i = np.size(vet1) / 2
-
-    for pos in range(int(i)):
+    for pos in it:
 
         vetA = vet1[pos]
         vetB = vet2[pos]
@@ -47,7 +62,7 @@ def distancia(vet1,vet2): #  distância analítica entre dois corpos.
         aux = math.sqrt(( (vetA[0] - vetB[0]) **2   + (vetA[1] - vetB[1]) **2 ))
         d = np.hstack((d,aux))
 
-    return d    
+    return d    #  saida é um vetor coluna n+1 x 1 
 
 def lognorm(sigma):  #  Gerador de números log-normais.
 
@@ -82,26 +97,13 @@ def sig(vet1):  #  desvio padrão de valores em um vetor qualquer.
 
     return sigma
 
-def TMn(vet1, const1, const2): #  Função geradora do posicionamento dos móveis.
-
-    TM = np.array([0,0])
-
-    for vet in vet1:
-        aux = np.array([vet[0] + (const1*const2), vet[1] + (const2*const1)])
-        TM = np.vstack((TM, aux))
-
-    TM = TM[1:len(vet1) -1]
-
-    return TM
-
 def Pn(vet1, vet2):  # Função geradora do ganho em W da fonte. (Ganho linear)
 
     P = np.array([0])
-
+    d = distancia(vet1,vet2)
 
     for i in range(len(vet1)):
 
-        d = distancia(vet1,vet2)
         P = np.vstack((P, [128.1 + 36.7 + np.log10(d[i])])) #  P gerado primeiramente em dB.
 
     for i in P:
@@ -112,48 +114,40 @@ def Pn(vet1, vet2):  # Função geradora do ganho em W da fonte. (Ganho linear)
 
     return P
 
-def Sombreamento(vet1,vet2,sd): #  Função geradora para valores de sombreamento:
+def Sombreamento(vet1,sd): #  Função geradora para valores de sombreamento em W:
 
-    d = np.array([])
     S = np.array([0])
 
+    for element in vet1:
 
-    for i in vet1:
-        for j in vet2:
+        x = 10**(lognorm(sd) /10)
+        S = np.vstack((S, x))
 
-            aux = math.sqrt( (i[0] - j[0])**2 + (i[1] - j[1]) **2 )
-            d = np.hstack((d, aux))
-
-            if aux <= R:
-
-                S = np.vstack((S,lognorm(sd)))
-
-            else:
-
-                S = np.vstack((S, 0))
-
-
+    S = S[1: len(vet1) -1]
     return S
             
-def Desvanecimento(): #  Função geradora para valores de Desvanecimento rápido.
+def Desvanecimento(vet1, sd): #  Função geradora para valores de Desvanecimento rápido em W. 
+
+    D = np.array([0])
+
+    for element in vet1:
+
+        x = sd*dray(sd,0)
+        D = np.vstack((D, x))
+    
+    D = D[1: len(vet1) - 1]
+
+    return D
 
 
 
 #  main
-
-ERB = antenas(N, R)
 
 #  Simulação:  
 
 for i in loop:
 
     #  Atualizar estado do sistema:
-
-    #  definindo variáveis aleatórias de posicionamento de TM.
-    x = R* math.sqrt(random.rand())
-    tht = random.rand() *2 *( math.pi)
-
-    #  definindo variáveis aleatórias de posicionamento de TM.
 
     #  Tornando os conteiners utilizados nulos para o procedimento matemático.
     TM = np.array([])
@@ -168,13 +162,17 @@ for i in loop:
     G = np.array([])
 
     #  Mudança de valores devido a atualização do estado do sistema.
-    TM = TMn(ERB, x, tht)  #  Matriz 2 x n+1
+    ERB, TM = antenas(N, R)
     
-    P = Pn(TM,ERB)  # Vetor coluna n + 1 x 1   
-    S = Sombreamento(ERB, TM,sigLN) # Vetor coluna (n+1)^2 x 1 
-    D = 
+    P = Pn(TM,ERB)  # Vetor coluna n + 1 x 1   em W
+    S = Sombreamento(ERB,sigLN) # Vetor coluna n+1 x 1 com todos os valores para ERBi TMi  em dB
+    D = Desvanecimento(ERB, sigRay)  # vetor coluna n+1 x 1 com tods os Fast fadding para ERBi e TMi  em dB
     
 
+
+
+
+print(ERB, '\n\n', TM, '\n\n', P , '\n\n', S, '\n\n', D, '\n\n', '\n\n',N)
 
 
 
