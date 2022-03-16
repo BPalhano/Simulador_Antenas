@@ -208,7 +208,7 @@ Adicionar a referência bibliográfica do Comunicação Móvel Celular.
 
 ## Futuras Atualizações:
 
- - Modificar a formatação das céluas para hexagonal.
+ - Modificar a formatação das células para hexagonal.
  - Optimizar computacionalmente a velocidade do laço principal.
  - Implementar uma forma inteligente de posicionar as antenas.
 
