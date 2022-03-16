@@ -210,6 +210,6 @@ Adicionar a referência bibliográfica do Comunicação Móvel Celular.
 
  - Modificar a formatação das céluas para hexagonal.
  - Optimizar computacionalmente a velocidade do laço principal.
- - Implementar uma forma inteligente de posicionar as anteas.
+ - Implementar uma forma inteligente de posicionar as antenas.
 
 
