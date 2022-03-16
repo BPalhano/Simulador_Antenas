@@ -121,7 +121,7 @@ Sombreamento e Desvanecimento Rápido.
   um vetor S<sub>i,j</sub>
 </p>
 
-<h3> <code>def Fast_fadding(vet1, sd):</code></h3>
+<h3> <code>def Fast_fadding(vet1, sd)</code></h3>
  
 
  
