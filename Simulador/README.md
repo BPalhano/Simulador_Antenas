@@ -3,6 +3,139 @@
 Até então, há um corpo de simulador em desenvolvimento, o mesmo utiliza-se de células circulares e calcula para cada atualização do sistema a posição dos usuários (TM) e os valores de
 Sombreamento e Desvanecimento Rápido.
 
+<h2> Comentário do Código <a href="https://github.com/BPalhano/Simulador_Antenas/blob/main/Simulador/simulator.py"><code>Simulador</code></a> </h2>
+
+<h3> <code> def antenas(num, dist): </code> </h3>
+
+<p>
+ <pre>
+ <code>
+    x = R*math.sqrt(random.rand()) * random.rand() * 2 * math.pi
+    y = R*math.sqrt(random.rand()) * random.rand() * 2 * math.pi
+ </code>
+ </pre>
+ 
+ X e Y definem as coordenadas cartesianas geradas aleatóriamente para o posicionamento do usuários (TM)
+ 
+  <pre>
+  <code>
+      while (contador != num):
+
+         x = R*math.sqrt(random.rand()) * random.rand() * 2 * math.pi
+         y = R*math.sqrt(random.rand()) * random.rand() * 2 * math.pi
+
+         arr1 = np.array([dist* math.cos((2*math.pi/num) * contador) , dist* math.sin((2*math.pi/num) * contador)])
+         arr2 = np.array([arr1[0] + x, arr1[1] + y])
+        
+         vetor1 = np.vstack((vetor1, arr1))
+         vetor2 = np.vstack((vetor2,arr2))
+  </code>
+  </pre>
+  
+  Laço de formação dos vetores de ERB<sub>i,j</sub> e TM<sub>i,j</sub>.
+  
+</p>
+  
+<h3> <code> def lognorm(sigma): </code> </h3>
+  
+  <p>
+ <code>x = random.rand() * sigma</code>
+ Função de retorno de uma variável log-normalizada.
+ 
+ </p>
+ 
+<h3> <code> dray(sigma, mi): </code> </h3>
+
+<p>
+ 
+ <pre>
+ <code>
+    x = random.normal(loc=mi, scale=sigma)
+    y = random.normal(loc=mi, scale=sigma)
+
+    h = abs(x**2 - y**2) #  |H(i,j)| ^2
+  </code>
+  </pre>
+  
+  Função retorna a variável h, uma variável criada a partir da distribuição de Rayleigh.
+</p>
+
+<h3> <code> def matriz_dist(vet1, vet2): </code></h3>
+
+<p>
+ <pre>
+ <code>
+    for i in vet1:
+        
+      for j in vet2:
+
+            dist = math.sqrt( pow( (i[0] - j[0]), 2 ) + pow((i[1] - j[1]), 2 ) )
+            d = np.hstack((d, dist))
+            
+  </code>
+  </pre>
+
+ Função de construção da matriz de distâncias de cada ERB<sub>i</sub> para todos os TM<sub> i,j </sub>
+</p>
+
+<h3> <code> def linear_to_dB(x): </code> e <code> def linear_to_dB(x): </code> </h3>
+
+<p>
+ Funções para conversar de escala linear para escala decibel e vice e versa.
+ 
+ <code>x = 10 **(x/10)</code> para o dB_to_linear<br>
+ <code>x = 10* np.log10(x)</code> para o linear_to_dB<br>
+
+</p>
+
+
+
+<h3> <code> def Pot_linear(vet1): </code> </h3>
+
+<p>
+ <pre><code>
+     vet1 = vet1.copy()
+
+    for i in range(len(vet1)):
+
+        vet1[i] = dB_to_linear(164.8 + np.log10(vet1[i]))
+
+    return vet1  #  em W
+  </pre></code>
+  A função de ganho de potência linear recebe a matriz de distâncias d<sub>i,j</sub> e copia a mesma para modificação, gerando o vetor P<sub>i,j</sub><br>
+  </p>
+  
+<h3> <code>def Sombreamento(vet1,sd):</code></h3>
+  
+<p>
+   <pre><code>
+    aux = vet1.copy()
+
+    for i in range(len(vet1)):
+
+        aux[i] = dB_to_linear(lognorm(sd))
+
+    return aux  # em W
+    </pre></code>
+  O vetor auxiliar copia o vetor passado( vetor de ganho de potência linear) e substitui na copia os valores para os valores de sombreamento gerando<br>
+  um vetor S<sub>i,j</sub>
+</p>
+
+<h3> <code>def Fast_fadding(vet1, sd):</code></h3>
+ 
+
+ 
+
+
+ 
+  
+  
+  
+  
+ 
+
+
+
 Fontes teóricas:
 
  - SAUNDERS, S. R.; ARAGÓN-ZAVALAA. Antennas and propagation for wireless communication systems. [s.l.] Chichester Wiley, 2007.
