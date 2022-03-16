@@ -105,38 +105,98 @@ Sombreamento e Desvanecimento Rápido.
   A função de ganho de potência linear recebe a matriz de distâncias d<sub>i,j</sub> e copia a mesma para modificação, gerando o vetor P<sub>i,j</sub><br>
   </p>
   
-<h3> <code>def Sombreamento(vet1,sd):</code></h3>
+<h3> <code> def Sombreamento(vet1,sd): </code> </h3>
   
 <p>
-   <pre><code>
-    aux = vet1.copy()
+ <pre><code>
+   aux = vet1.copy()
 
     for i in range(len(vet1)):
 
         aux[i] = dB_to_linear(lognorm(sd))
 
     return aux  # em W
-    </pre></code>
-  O vetor auxiliar copia o vetor passado( vetor de ganho de potência linear) e substitui na copia os valores para os valores de sombreamento gerando<br>
+ </pre></code>
+  O vetor auxiliar copia o vetor passado( vetor de ganho de potência linear) e substitui na copia os valores para os valores de sombreamento gerando
   um vetor S<sub>i,j</sub>
 </p>
 
-<h3> <code>def Fast_fadding(vet1, sd)</code></h3>
- 
+<h3><code>def Fast_fadding(vet1, sd):</code></h3>
 
- 
+<p>
+ <pre><code>
+    aux = vet1.copy()
 
+    for i in range(len(vet1)):
 
- 
+        aux[i] = dB_to_linear(sd*dray(sd,0))
+
+    return aux # em W
+  </pre></code>
+   O vetor auxiliar copia o vetor passado( vetor de ganho de potência linear) e substitui na copia os valores para os valores de desvanecimento rápido gerando
+  um vetor D<sub>i,j</sub> 
   
-  
-  
-  
+</p>
  
+<h3><code>def Ganho(vet1,vet2,vet3, K): </code></h3>
+ 
+<p>
+  <pre><code>
+      G = vet1.copy()
+
+    for i in range(len(vet1)):
+
+        G[i] = vet1[i] * vet2[i] * vet3[i] * K
+  </pre></code>
+  
+   O vetor auxiliar copia o vetor passado( vetor de ganho de potência linear) e substitui na copia os valores para os valores de ganho de potência gerando
+  um vetor G<sub>i,j</sub>
+</p>
 
 
+<h3> <code> def SINR(num, vet1, K): </code> </h3>
 
-Fontes teóricas:
+<p>
+ <pre><code>
+ 
+    matrix = vet1.copy()
+    trace = np.array([])
+
+    contador = 0
+    for element in range(len(matrix)):
+
+        if (contador % (num+1) == 0):
+
+            trace = np.hstack((trace, matrix[element]))
+        contador += 1
+
+    Sum_trace = Soma(trace)
+    Sum_matrix = Soma(matrix)
+
+    Sum_const = Sum_matrix - Sum_trace
+
+    SNR = np.array([])
+
+    for element in range(len(trace)):
+
+        aux = (trace[element] / (Sum_const + K))
+
+        SNR = np.hstack((SNR,aux))
+ </code></pre>
+ 
+ Função geradora da matriz SINR<sub>i,i</sub> a partir dos valores de G<sub>i,j </sub>
+ 
+ 
+<hr>
+
+<p>
+ A partir da matriz SINR<sub>i,i </sub> será criado um dataframe utilizando a biblioteca <code>pandas</code> e será plotado por meio<br>
+ da biblioteca <code>matplotlib</code> a função da Empirical Cumulative Distribuited Funcition (eCDF).
+</p>
+            
+<hr>
+
+<h3>Fontes teóricas:</h3>
 
  - SAUNDERS, S. R.; ARAGÓN-ZAVALAA. Antennas and propagation for wireless communication systems. [s.l.] Chichester Wiley, 2007.
 
