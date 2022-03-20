@@ -198,7 +198,9 @@ Sombreamento e Desvanecimento Rápido.
 
 <h3>Fontes teóricas:</h3>
 
- - SAUNDERS, S. R.; ARAGÓN-ZAVALAA. Antennas and propagation for wireless communication systems. [s.l.] Chichester Wiley, 2007.
+
+<ul></ul>
+ <li>SAUNDERS, S. R.; ARAGÓN-ZAVALAA. Antennas and propagation for wireless communication systems. [s.l.] Chichester Wiley, 2007.
 
  <!-- 
 
