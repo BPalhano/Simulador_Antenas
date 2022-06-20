@@ -5,60 +5,71 @@ Sombreamento e Desvanecimento Rápido.
 
 <h2> Comentário do Código <a href="https://github.com/BPalhano/Simulador_Antenas/blob/main/Simulador/simulator.py"><code>Simulador</code></a> </h2>
 
-<h3> <code> def antenas(num, dist): </code> </h3>
+<h3>Bibliotecas Utilizadas:</h3>
+<p>
+ <pre>
+ Numpy;
+ Pandas;
+ Scipy(Stats);
+ Matplotlib(Pyplot);
+ Seaborn;
+ Math;
+ </pre>
+<p>
+<h2>FUNÇÕES </h2>
+<h3> <code> def ERB_TM(num, dist): </code> </h3>
 
 <p>
  <pre>
  <code>
-    x = R*math.sqrt(random.rand()) * random.rand() * 2 * math.pi
-    y = R*math.sqrt(random.rand()) * random.rand() * 2 * math.pi
+    ERB = np.array([0, 0, 100])
+    ap = dist * math.sqrt(3)/2
+    TM = np.array([ap * random.uniform(0, 1), ap * random.uniform(0, 1), 0])
  </code>
  </pre>
  
- X e Y definem as coordenadas cartesianas geradas aleatóriamente para o posicionamento do usuários (TM)
+ Posição da primeira Estação Rádio-Base(ERB) definida, bem como o apótema da célula hexagonal e a posição do primeiro usuário (relativo a ERB<sub>0</sub>)
  
   <pre>
   <code>
-      while (contador != num):
+    while contador_ERB != 6:
+        arr1 = np.array(
+            [2*ap * math.cos((math.pi / 6) + contador_ERB*math.pi/3), 2*ap * math.sin((math.pi / 6) +
+                                                                                      contador_ERB*math.pi/3), 100])
+        ERB = np.vstack((ERB, arr1))
 
-         x = R*math.sqrt(random.rand()) * random.rand() * 2 * math.pi
-         y = R*math.sqrt(random.rand()) * random.rand() * 2 * math.pi
+        arr2 = np.array(
+            [arr1[0] + dist * random.uniform(0, 1), arr1[1] + dist * random.uniform(0, 1), arr1[2] +
+             100 * random.uniform(-1, 0)])
+        TM = np.vstack((TM, arr2))
 
-         arr1 = np.array([dist* math.cos((2*math.pi/num) * contador) , dist* math.sin((2*math.pi/num) * contador)])
-         arr2 = np.array([arr1[0] + x, arr1[1] + y])
-        
-         vetor1 = np.vstack((vetor1, arr1))
-         vetor2 = np.vstack((vetor2,arr2))
+        contador_ERB += 1
   </code>
   </pre>
   
-  Laço de formação dos vetores de ERB<sub>i,j</sub> e TM<sub>i,j</sub>.
+  Laço de posicionamento das ERB<sub>i,j</sub> e dos primeiros 6 TM<sub>i,j</sub>.
   
-</p>
+  <pre>
+  <code>
   
-<h3> <code> def lognorm(sigma): </code> </h3>
-  
-  <p>
- <code>x = random.rand() * sigma</code>
- Função de retorno de uma variável log-normalizada.
- 
- </p>
- 
-<h3> <code> dray(sigma, mi): </code> </h3>
+      if N > contador_ERB:
+        contador_TM = 0
 
-<p>
- 
- <pre>
- <code>
-    x = random.normal(loc=mi, scale=sigma)
-    y = random.normal(loc=mi, scale=sigma)
+        while contador_TM != num:
+            aux = np.array([6 * dist * random.normal(0, 1), 6 * dist * math.sin(math.pi / 3) * random.uniform(0, 1),
+                            100 * random.uniform(0, 1)], dtype=object)
 
-    h = abs(x**2 - y**2) #  |H(i,j)| ^2
+            TM = np.vstack((TM, aux))
+            contador_TM += 1
+
+    return ERB, TM
   </code>
   </pre>
   
-  Função retorna a variável h, uma variável criada a partir da distribuição de Rayleigh.
+  Caso haja mais usuários do que ERBs, este trecho é responsável por posicionar os usuários restantes.
+  
 </p>
+  
 
 <h3> <code> def matriz_dist(vet1, vet2): </code></h3>
 
@@ -90,17 +101,16 @@ Sombreamento e Desvanecimento Rápido.
 
 
 
-<h3> <code> def Pot_linear(vet1): </code> </h3>
+<h3> <code> def Path_loss(vet1): </code> </h3>
 
 <p>
  <pre><code>
-     vet1 = vet1.copy()
+    vet1 = vet1.copy()
 
     for i in range(len(vet1)):
+        vet1[i] = dB_to_linear(20 * np.log10(4 * math.pi * vet1 / _lambda))
 
-        vet1[i] = dB_to_linear(164.8 + np.log10(vet1[i]))
-
-    return vet1  #  em W
+    return vet1  # em W
   </pre></code>
   A função de ganho de potência linear recebe a matriz de distâncias d<sub>i,j</sub> e copia a mesma para modificação, gerando o vetor P<sub>i,j</sub><br>
   </p>
@@ -109,11 +119,15 @@ Sombreamento e Desvanecimento Rápido.
   
 <p>
  <pre><code>
-   aux = vet1.copy()
+    aux = vet1.copy()
+
+    rv = random.lognormal(mean=0, sigma=sd)
+
+    while rv > 100:
+        rv = random.lognormal(mean=0, sigma=sd)
 
     for i in range(len(vet1)):
-
-        aux[i] = dB_to_linear(lognorm(sd))
+        aux[i] = dB_to_linear(rv)
 
     return aux  # em W
  </pre></code>
@@ -128,10 +142,10 @@ Sombreamento e Desvanecimento Rápido.
     aux = vet1.copy()
 
     for i in range(len(vet1)):
+        rv = scs.rice.rvs(10)
+        aux[i] = dB_to_linear(rv)
 
-        aux[i] = dB_to_linear(sd*dray(sd,0))
-
-    return aux # em W
+    return aux  # em W
   </pre></code>
    O vetor auxiliar copia o vetor passado( vetor de ganho de potência linear) e substitui na copia os valores para os valores de desvanecimento rápido gerando
   um vetor D<sub>i,j</sub> 
@@ -142,11 +156,12 @@ Sombreamento e Desvanecimento Rápido.
  
 <p>
   <pre><code>
-      G = vet1.copy()
+          G = vet1.copy()
 
     for i in range(len(vet1)):
-
         G[i] = vet1[i] * vet2[i] * vet3[i] * K
+
+    return G  # em W
   </pre></code>
   
    O vetor auxiliar copia o vetor passado( vetor de ganho de potência linear) e substitui na copia os valores para os valores de ganho de potência gerando
@@ -160,38 +175,39 @@ Sombreamento e Desvanecimento Rápido.
  <pre><code>
  
     matrix = vet1.copy()
-    trace = np.array([])
+    trace = 0
 
-    contador = 0
-    for element in range(len(matrix)):
+    for i in range(0, 7):
+        trace += matrix[7 * i]
 
-        if (contador % (num+1) == 0):
+    tot = Soma(matrix)
 
-            trace = np.hstack((trace, matrix[element]))
-        contador += 1
-
-    Sum_trace = Soma(trace)
-    Sum_matrix = Soma(matrix)
-
-    Sum_const = Sum_matrix - Sum_trace
+    cnt = tot - trace
 
     SNR = np.array([])
 
-    for element in range(len(trace)):
+    for i in range(7):
+        val = matrix[i * 7] / (const + cnt)
 
-        aux = (trace[element] / (Sum_const + K))
+        SNR = np.hstack((SNR, val))
 
-        SNR = np.hstack((SNR,aux))
+    return SNR
  </code></pre>
  
  Função geradora da matriz SINR<sub>i,i</sub> a partir dos valores de G<sub>i,j </sub>
  
  
 <hr>
-
+<h3> <code> def eCDF(nvet1): </code> </h3>
 <p>
- A partir da matriz SINR<sub>i,i </sub> será criado um dataframe utilizando a biblioteca <code>pandas</code> e será plotado por meio<br>
- da biblioteca <code>matplotlib</code> a função da Empirical Cumulative Distribuited Funcition (eCDF).
+<pre><code>
+    dataset = vet1.copy()
+    df = pd.DataFrame(dataset)
+
+    sbn.ecdfplot(df)
+ </code></pre>
+ 
+ Função para gerar o plot da Cumulative Distribuition Function (CDF) dos valores de ruído obtido pela simulação.
 </p>
             
 <hr>
@@ -201,6 +217,9 @@ Sombreamento e Desvanecimento Rápido.
 
 <ul></ul>
  <li>SAUNDERS, S. R.; ARAGÓN-ZAVALAA. Antennas and propagation for wireless communication systems. [s.l.] Chichester Wiley, 2007.
+ <li>YONG SOO CHO et al. MIMO-OFDM wireless communications with MATLAB. Singapore ; Hoboken, Nj: Ieee Press, 2011.
+ <li>Özlem Tuğfe Demir, Emil Björnson and Luca Sanguinetti (2020),“Foundations of User-centric Cell-free Massive MIMO”,
+‌
 
  <!-- 
 
@@ -210,8 +229,7 @@ Adicionar a referência bibliográfica do Comunicação Móvel Celular.
 
 ## Futuras Atualizações:
 
- - Modificar a formatação das células para hexagonal.
- - Optimizar computacionalmente a velocidade do laço principal.
  - Implementar uma forma inteligente de posicionar as antenas.
-
+ - Implementar classe de usuários (métodos: Sombreamento, célular associada, Visada, Desvanecimento Rápido, Distância a base).
+ - Implementar intereções do sinal na camada física (cenário Cell-Free Massivo MIMO).
 
