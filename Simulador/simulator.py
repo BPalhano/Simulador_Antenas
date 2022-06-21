@@ -21,6 +21,8 @@ loop = range(loop)
 it = range(N + 1)
 SINR_final = np.array([])
 SINR_final2 = np.array([])
+SINR_final3 = np.array([])
+
 
 ########################################################################################################################
 
@@ -103,6 +105,16 @@ def Path_loss(vet1):  # Gerador de interferência linear.
     return vet1  # em W
 
 
+def Path_loss_teste(vet1):  # Gerador de interferência linear.
+
+    vet1 = vet1.copy()
+
+    for i in range(len(vet1)):
+        vet1[i] = dB_to_linear(20 * np.log10(4 * np.pi * vet1[i] / _lambda))
+
+    return vet1  # em W
+
+
 def Sombreamento_teste(vet1, sd):
     aux = vet1.copy()
 
@@ -181,22 +193,26 @@ def sbn_eCDF(vet1):
 for i in loop:
 
     ERB, TM = ERB_TM(N, R)
-    P = matriz_dist(ERB, TM)
+    P = Path_loss(matriz_dist(ERB, TM))
+    P2 = Path_loss_teste(matriz_dist(ERB,TM))
     S = Sombreamento_teste(P, 8)
     S2 = Sombreamento(P,8)
     D = Fast_fadding(P)
     G = Ganho(P, S, D, dBm_to_linear(43))
     G2 = Ganho(P, S2, D, dBm_to_linear(43))
+    G3 = Ganho(P2, S2, D, dBm_to_linear(43))
 
     SINR_final = np.hstack((SINR_final, SINR(G, dBm_to_linear(-116))))
     SINR_final2 = np.hstack((SINR_final2, SINR(G2, dBm_to_linear(-116))))
+    SINR_final3 =np.hstack((SINR_final2, SINR(G3, dBm_to_linear(-116))))
 
-#sbn_eCDF(linear_to_dB(SINR_final))  # Curva normalizada
-sbn_eCDF(linear_to_dB(SINR_final2))  # Curva estranha
+#sbn_eCDF(linear_to_dB(SINR_final))  # Curva 1
+sbn_eCDF(linear_to_dB(SINR_final2))  # Curva 2
+sbn_eCDF(linear_to_dB(SINR_final3))  # Curva 3
 
 ########################################################################################################################
 plt.xlabel('SNR(dB)')
 plt.show()
 ################################################## DEBUG ###############################################################
-print(linear_to_dB(P), '\n\n', linear_to_dB(S2), '\n\n', linear_to_dB(D), '\n\n', linear_to_dB(G), '\n\n', linear_to_dB(SINR_final))
+print(linear_to_dB(P2), '\n\n', linear_to_dB(S2), '\n\n', linear_to_dB(D), '\n\n', linear_to_dB(G), '\n\n', linear_to_dB(SINR_final))
 ########################################################################################################################
