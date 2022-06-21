@@ -13,7 +13,6 @@ Sombreamento e Desvanecimento Rápido.
  Scipy(Stats);
  Matplotlib(Pyplot);
  Seaborn;
- Math;
  </pre>
 <p>
 <h2>FUNÇÕES </h2>
@@ -96,6 +95,7 @@ Sombreamento e Desvanecimento Rápido.
  
  <code>x = 10 **(x/10)</code> para o dB_to_linear<br>
  <code>x = 10* np.log10(x)</code> para o linear_to_dB<br>
+ <code> x = 10 ** (x/10 -3) </code> ára o dBm_to_linear<br>
 
 </p>
 
