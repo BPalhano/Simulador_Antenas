@@ -9,13 +9,13 @@ from numpy import random
 
 ############################################  VARIÁVEIS GLOBAIS ########################################################
 N = int(input('Numero de usuários: '))
-R = 2000
+R = 200
 loop = int(input('Quantos laços de repetição: '))
 
 print('\n\n')
 
 c = 299792458
-freq = 6000000000
+freq = 6000000000 # 6 * 10^{9}. Hz
 _lambda = c / freq
 loop = range(loop)
 it = range(N + 1)
@@ -100,20 +100,9 @@ def Path_loss(vet1):  # Gerador de interferência linear.
     vet1 = vet1.copy()
 
     for i in range(len(vet1)):
-        vet1[i] = dB_to_linear(128.1 + 3.67 * np.log10(vet1[i]))
+        vet1[i] = dBm_to_linear(128.1 + 3.67 * np.log10(vet1[i]))
 
     return vet1  # em W
-
-
-def Path_loss_teste(vet1):  # Gerador de interferência linear.
-
-    vet1 = vet1.copy()
-
-    for i in range(len(vet1)):
-        vet1[i] = dB_to_linear(20 * np.log10(4 * np.pi * vet1[i] / _lambda))
-
-    return vet1  # em W
-
 
 def Sombreamento_teste(vet1, sd):
     aux = vet1.copy()
@@ -124,7 +113,7 @@ def Sombreamento_teste(vet1, sd):
         rv = random.lognormal(mean=0, sigma=sd)
 
     for i in range(len(vet1)):
-        aux[i] = dB_to_linear(rv)
+        aux[i] = dBm_to_linear(rv)
 
     return aux  # em W
 
@@ -136,28 +125,45 @@ def Sombreamento(vet1, sd,xdim=1, ydim=1):
     for i in range(len(vet1)):
         rv = sd*random.randn(xdim,ydim)
 
-        aux[i] = dB_to_linear(rv)
+        aux[i] = dBm_to_linear(rv)
     return aux #  em W
 
 
-def Fast_fadding(vet1, xdim=1, ydim=1):
+def Fast_fadding(vet1, xdim=1, ydim=1): # Rice
     aux = vet1.copy()
+    rv = np.array([])
 
     for i in range(len(vet1)):
-        rv = (1/(2**0.5))*scs.rice.rvs(xdim, ydim) + (1/(2**0.5)) * scs.rice.rvs(xdim, ydim)*1j
-        aux[i] = dB_to_linear(abs(rv**2))
+        for k in range (10):
+            rv = np.hstack ((rv ,abs((1 / (2 ** 0.5)) * scs.rice.rvs ( xdim , ydim ) + (1 / (2 ** 0.5)) *
+                                                                                    scs.rice.rvs ( xdim ,ydim ) * 1j)**2))
+        aux[i] = dBm_to_linear(np.mean(rv))
 
     return aux  # em W
+
+def Fast_fadding2(vet1, xdim=1, ydim=1): #  Nakagami
+    aux = vet1.copy()
+    rv = np.array([])
+
+    for i in range(len(vet1)):
+        for k in range(10):
+            rv = np.hstack((rv, abs((1 / (2 ** 0.5)) * scs.nakagami.rvs(5,xdim, ydim) + (1 / (2 ** 0.5)) *
+                                                                                scs.nakagami.rvs(5,xdim,ydim)*1j)**2 ))
+
+        aux[i] = dB_to_linear(np.mean(rv))
+
+    return aux # em w
 
 
 def Ganho(vet1, vet2, vet3, K):  # Ganho total do sistema
 
     G = vet1.copy()
 
-    for i in range(len(vet1)):
-        G[i] = vet1[i] * vet2[i] * vet3[i] * K
+    output = np.multiply(vet1,vet2)
+    output = np.multiply(output,vet3)
+    output = np.multiply(output,K)
 
-    return G  # em W
+    return output  # em W
 
 
 def SINR(vet1, const):
@@ -180,6 +186,33 @@ def SINR(vet1, const):
 
     return SNR
 
+def SINR_test(vet1,const):
+
+    matrix = np.array([])
+    aux = np.array([])
+
+    for i in range(N):
+
+        for j in range(7):
+            aux = np.hstack((aux, vet1[j]))
+
+        if i == 0:
+            matrix = np.hstack((matrix, aux))
+            aux = np.array([])
+
+        else:
+            matrix = np.vstack((matrix, aux))
+            aux = np.array([])
+
+    output = np.array([])
+
+    for i in range(7):
+
+        x = (matrix[i][i]/ ((np.sum(matrix) - np.trace(matrix)) - const))
+        output = np.hstack((output,x))
+
+    return x
+
 
 def sbn_eCDF(vet1):
     dataset = vet1.copy()
@@ -194,25 +227,26 @@ for i in loop:
 
     ERB, TM = ERB_TM(N, R)
     P = Path_loss(matriz_dist(ERB, TM))
-    P2 = Path_loss_teste(matriz_dist(ERB,TM))
-    S = Sombreamento_teste(P, 8)
-    S2 = Sombreamento(P,8)
-    D = Fast_fadding(P)
+    S = Sombreamento_teste(P, 8) # 1 valor p/ cluster.
+    S2 = Sombreamento(P,8) # 1 valor por usuário, não interpolado.
+    D = Fast_fadding2(P)
     G = Ganho(P, S, D, dBm_to_linear(43))
     G2 = Ganho(P, S2, D, dBm_to_linear(43))
-    G3 = Ganho(P2, S2, D, dBm_to_linear(43))
+    SINR_final = np.hstack((SINR_final, SINR_test(G, dBm_to_linear(-116))))
+    SINR_final2 = np.hstack((SINR_final2, SINR(G2, dBm_to_linear(-114))))
 
-    SINR_final = np.hstack((SINR_final, SINR(G, dBm_to_linear(-116))))
-    SINR_final2 = np.hstack((SINR_final2, SINR(G2, dBm_to_linear(-116))))
-    SINR_final3 =np.hstack((SINR_final2, SINR(G3, dBm_to_linear(-116))))
+#PLOT DE SINR:
+#sbn_eCDF(linear_to_dB(SINR_final))  # Curva 1,
+sbn_eCDF(linear_to_dB(SINR_final2))  # Curva 2,
+#sbn_eCDF(linear_to_dB(SINR_final3))  # Curva 3
 
-#sbn_eCDF(linear_to_dB(SINR_final))  # Curva 1
-sbn_eCDF(linear_to_dB(SINR_final2))  # Curva 2
-sbn_eCDF(linear_to_dB(SINR_final3))  # Curva 3
+#PLOT DE SNR:
+#sbn_eCDF(linear_to_dB(G))
+#sbn_eCDF(linear_to_dB(G2))
 
 ########################################################################################################################
-plt.xlabel('SNR(dB)')
 plt.show()
 ################################################## DEBUG ###############################################################
-print(linear_to_dB(P2), '\n\n', linear_to_dB(S2), '\n\n', linear_to_dB(D), '\n\n', linear_to_dB(G), '\n\n', linear_to_dB(SINR_final))
+print('Valores de SINR:','\n\n', linear_to_dB(SINR_final2), '\n\n', linear_to_dB(SINR_final), '\n\n')
+print('Valores de SNR:','\n\n', linear_to_dB(G), '\n\n', linear_to_dB(G2))
 ########################################################################################################################
